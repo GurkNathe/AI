@@ -1,6 +1,7 @@
-from pygame import Rect
 import pygame
 import random
+
+from pygame import Rect
 
 COLORS = {
     "0": ((255,255,255), (0,0,0)),
@@ -51,7 +52,6 @@ class GameBoard:
                     val = 2
                 row.append(Cell(i, j, self.cell_width, val))
             board.append(row)
-
         return board
 
     def add_cell(self):
@@ -61,12 +61,12 @@ class GameBoard:
             if self.board[cell[0]][cell[1]].val == 0:
                 self.board[cell[0]][cell[1]].val = val
                 break
-# Add game over check
+
     def update_colors(self):
         for row in self.board:
             for cell in row:
                 cell.colors = COLORS[str(cell.val)]
-
+# Fix shifting
     def shift_up(self):
         num_moves = 0
         moved = True
@@ -154,6 +154,54 @@ class GameBoard:
         if num_moves > 0:
             self.add_cell()
         self.update_colors()
+
+    def get_vals(self):
+        return [[cell.val for cell in row] for row in self.board]
+
+    def reset(self):
+        self.board = self.gen_board()
+        self.score = 0
+        self.game_over = False
+
+    def check_loss(self):
+        # Check for no zeros
+        zero = False
+        for row in self.board:
+            for cell in row:
+                if cell.val == 0:
+                    zero = True
+                    break
+            if zero:
+                break
+
+        if not zero:
+            num_moves = 0
+
+            # Check up
+            for row in range(4):
+                for col in range(3, 0, -1):
+                    if self.board[row][col].val != 0 and self.board[row][col].val == self.board[row][col - 1].val:
+                        num_moves += 1
+            # Check down
+            for row in range(4):
+                for col in range(3):
+                    if self.board[row][col].val != 0 and self.board[row][col].val == self.board[row][col + 1].val:
+                        num_moves += 1
+            # Check left
+            for row in range(3, 0, -1):
+                for col in range(4):
+                    if self.board[row][col].val != 0 and self.board[row][col].val == self.board[row - 1][col].val:
+                        num_moves += 1
+            # Check right
+            for row in range(3):
+                for col in range(4):
+                    if self.board[row][col].val != 0 and self.board[row][col].val == self.board[row + 1][col].val:
+                        num_moves += 1
+
+            if num_moves == 0:
+                self.game_over = True
+                return True
+        return False
 
     def draw(self):
         self.win.fill((255,255,255))
