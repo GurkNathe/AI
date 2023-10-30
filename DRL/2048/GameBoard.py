@@ -66,6 +66,7 @@ class GameBoard:
         for row in self.board:
             for cell in row:
                 cell.colors = COLORS[str(cell.val)]
+
 # Fix shifting
     def shift_up(self):
         num_moves = 0
@@ -154,6 +155,48 @@ class GameBoard:
         if num_moves > 0:
             self.add_cell()
         self.update_colors()
+
+
+    def check_up(self):
+        moved = False
+        for row in range(4):
+            for col in range(3, 0, -1):
+                if self.board[row][col].val != 0 and self.board[row][col].val == self.board[row][col - 1].val:
+                    moved = True
+                if self.board[row][col].val > 0 and self.board[row][col - 1].val == 0:
+                    moved = True
+        return moved
+
+    def check_down(self):
+        moved = False
+        for row in range(4):
+            for col in range(3):
+                if self.board[row][col].val != 0 and self.board[row][col].val == self.board[row][col + 1].val:
+                    moved = True
+                if self.board[row][col].val > 0 and self.board[row][col + 1].val == 0:
+                    moved = True
+        return moved
+
+    def check_left(self):
+        moved = False
+        for row in range(3, 0, -1):
+            for col in range(4):
+                if self.board[row][col].val != 0 and self.board[row][col].val == self.board[row - 1][col].val:
+                    moved = True
+                if self.board[row][col].val > 0 and self.board[row - 1][col].val == 0:
+                    moved = True
+        return moved
+
+    def check_right(self):
+        moved = False
+        for row in range(3):
+            for col in range(4):
+                if self.board[row][col].val != 0 and self.board[row][col].val == self.board[row + 1][col].val:
+                    moved = True
+                if self.board[row][col].val > 0 and self.board[row + 1][col].val == 0:
+                    moved = True
+        return moved
+
 
     def get_vals(self):
         return [[cell.val for cell in row] for row in self.board]

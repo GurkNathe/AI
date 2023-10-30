@@ -2,7 +2,9 @@ import pygame
 from GameBoard import GameBoard
 from GameDriver import GameDriver
 
-def main():
+import sys
+
+def main(argv: list):
     width = 800
     pygame.init()
     win = pygame.display.set_mode((width, width))
@@ -10,13 +12,13 @@ def main():
     pygame.display.set_caption("2048")
 
     run = True
-    AI = True    
+    AI = False if int(argv[0]) == 0 else True
 
     board = GameBoard(win, font, width)
 
     if AI:
         agent = GameDriver()
-        agent.train(board, 10000)
+        agent.train(board, 100)
         pygame.quit()
     else:
         while run and not board.game_over:
@@ -45,4 +47,4 @@ def main():
         pygame.quit()
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

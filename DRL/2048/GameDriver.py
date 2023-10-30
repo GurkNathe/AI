@@ -2,14 +2,16 @@ import numpy as np
 import pygame
 
 import tensorflow as tf
+import tensorflow.keras.layers as layers
 tf.keras.utils.disable_interactive_logging()
 
 class GameDriver():
     def __init__(self):
         self.model = tf.keras.Sequential([
-            tf.keras.layers.Dense(128, activation="relu", input_shape=(4,4)),
-            tf.keras.layers.Dense(128, activation="relu"),
-            tf.keras.layers.Dense(4)
+            layers.Dense(16, activation="relu", input_shape=(1, 16)),
+            layers.Dense(8, activation="relu"),
+            layers.Dense(8, activation="relu"),
+            layers.Dense(4, activation="softmax")
         ])
         self.model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
 
@@ -25,18 +27,23 @@ class GameDriver():
             board.reset()
             while not board.game_over:
                 state = np.array(board.get_vals())
-                action = self.choose_action(state, epsilon)
 
                 old_score = board.score
+
+                valid = False
+                while not valid:
+                    action = self.choose_action(state, epsilon)
+                    print(type(action))
+                    valid = self.check_validity(action, board)
 
                 match action:
                     case 0: board.shift_up()
                     case 1: board.shift_down()
                     case 2: board.shift_left()
                     case 3: board.shift_right()
-                    case _: print("Error")
+                    case _: print("Action error")
 
-                reward = board.score - old_score
+                reward = self.get_zeros(board) + (board.score - old_score)
 
                 self.update_network(state, action, reward, board)
 
@@ -48,7 +55,7 @@ class GameDriver():
         self.result_data(averages, n, score_range)
 
     def episode_data(self, board, i, averages, score_range):
-        print(f"Score: {board.score}")
+        print(f"Episode {i} - Score: {board.score}")
         averages += board.score
         score_range[0] = score_range[0] if score_range[0] < board.score and i != 0 else board.score
         score_range[1] = score_range[1] if score_range[1] > board.score else board.score
@@ -59,17 +66,33 @@ class GameDriver():
         print(f"Average Score: {averages / n}")
         print(f"Range of Scores: {score_range[0]} - {score_range[1]}")
 
+    def get_zeros(self, board):
+        num_zeros = 0
+        for row in board.board:
+            for cell in row:
+                if cell.val == 0:
+                    num_zeros += 1
+        return num_zeros
+    
+    def check_validity(self, action, board):
+        valid = False
+        match action:
+            case 0: valid = board.check_up()
+            case 1: valid = board.check_down()
+            case 2: valid = board.check_left()
+            case 3: valid = board.check_right()
+            case _: print("Validity check error")
+        return valid
+
     def choose_action(self, state, epsilon):
-        if np.random.rand() < epsilon:
-            return np.random.randint(4)
-        else:
-            q_values = self.model.predict(state, verbose=0)
-            return np.argmax(q_values[0])
+        formated_state = state.reshape(1, 1, -1)
+        q_values = self.model.predict(formated_state, verbose=0)
+        return np.argmax(q_values[0][0])
 
     def update_network(self, state, action, reward, board):
         target = reward
-        if not board.game_over:
-            target += 0.99 * np.max(self.model.predict(np.array(board.get_vals()), verbose=0)[0])
-        target_f = self.model.predict(state, verbose=0)
-        target_f[0][action] = target
-        self.model.fit(state, target_f, epochs=1, verbose=0)
+        formated_state = state.reshape(1, 1, -1)
+        target_f = self.model.predict(formated_state, verbose=0)[0][0]
+        target_f[action] = target
+        print(target_f, formated_state)
+        self.model.fit(formated_state, target_f, epochs=1, verbose=0)
